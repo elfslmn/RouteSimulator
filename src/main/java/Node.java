@@ -7,16 +7,17 @@ public class Node {
 
 	public int id;
 	public Hashtable<Integer, Integer> linkCost; //key: neighbor id, value: link cost to that neighbor
-	public Hashtable<Integer, Hashtable<Integer, Integer>> distanceTable;
+	public Hashtable<Integer, Hashtable<Integer, Integer>> distanceTable; // <dest, <via,cost>>
 
 	public boolean isTableUpdated = false;
 	private Integer[] neighbours; // contains node itself, too
+	boolean addItself = true;
 	
 	public Node(int nodeID, Hashtable<Integer, Integer> linkCost) {
 		this.id = nodeID;
 		this.linkCost = linkCost;
 
-		linkCost.put(id,0); // Node path to itself.
+		if(addItself) linkCost.put(id,0); // Node path to itself.
 
 		distanceTable = new Hashtable<>();
 		neighbours = new Integer[linkCost.size()];
@@ -51,12 +52,12 @@ public class Node {
 		Integer via = m.senderID;
 		Integer costToSender = distanceTable.get(m.senderID).get(via);
 		for(Integer dest: m.content.keySet()){
-			//if(dest == id) continue; // path to itself
+			if(!addItself && dest == id) continue; // path to itself
 			if(distanceTable.keySet().contains(dest)){
 				int oldcost = distanceTable.get(dest).get(via);
 				int newcost = costToSender + m.content.get(dest);
-				if(newcost < oldcost){
-					distanceTable.get(dest).put(via, newcost);
+				distanceTable.get(dest).put(via, newcost);
+				if(newcost != oldcost){
 					isTableUpdated = true;
 				}
 			}
@@ -139,7 +140,7 @@ public class Node {
 			return;
 		}
 
-		System.out.print("   ");
+		System.out.print("D"+id+" ");
 		for(int via : neighbours){
 			System.out.print(via+" ");
 		}
@@ -157,5 +158,33 @@ public class Node {
 		}
 	}
 
+	public void onCostChanged(int neighbor, int newCost){
+		System.out.println("OnCostChanged(neignbor: "+ neighbor+" newCost: "+ newCost );
+		System.out.println("Old distance table of node "+id);
+		printDistanceTable();
+		Hashtable<Integer, Integer> ht = distanceTable.get(neighbor); // ht : <via,cost>
+		int oldCost = ht.get(neighbor);
+		int diff = newCost - oldCost;
 
+		/*Hashtable<Integer, Integer> ft = getForwardingTable(); // ft: <destination, via>
+		for(Integer dest : ft.keySet()){
+			if(ft.get(dest) == neighbor){ // via neighbor
+				Hashtable<Integer, Integer> row = distanceTable.get(dest); // row : <via,cost>
+				int oldc = row.get(neighbor);
+				row.put(neighbor, oldc + diff);
+				distanceTable.put(dest, row);
+			}
+		}*/
+
+		for(Integer dest : distanceTable.keySet()){
+			Hashtable<Integer, Integer> row = distanceTable.get(dest); // row : <via,cost>
+			int oldc = row.get(neighbor);
+			row.put(neighbor, oldc + diff);
+			distanceTable.put(dest, row);
+		}
+		System.out.println("New distance table of node "+id);
+		printDistanceTable();
+
+		isTableUpdated = true;
+	}
 }
