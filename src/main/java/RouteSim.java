@@ -59,11 +59,16 @@ public class RouteSim {
 				boolean isConverged = true;
 				for(Integer id : graph.keySet()){
 					boolean isUpdated = graph.get(id).sendUpdate();
-					System.out.println("Node "+id+" isUpdated="+isUpdated + " and updates are sent");
+					if (isUpdated) System.out.println("RouteSim: Node "+id+" isUpdated="+isUpdated + " and updates are sent");
+					else System.out.println("RouteSim: Node "+id+" isUpdated="+isUpdated);
 					isConverged = isConverged && (!isUpdated);
 				}
 				if(isConverged){
 					System.out.println("System is converged at time "+t);
+					for(Integer id : graph.keySet()){
+						graph.get(id).printForwardingTable();
+						graph.get(id).printDistanceVector();
+					}
 					break;
 				}
 

@@ -49,6 +49,7 @@ public class Node {
 		System.out.println("Old distance table of node "+id);
 		printDistanceTable();
 
+		boolean isMessageUpdates = false;
 		Integer via = m.senderID;
 		Integer costToSender = distanceTable.get(m.senderID).get(via);
 		for(Integer dest: m.content.keySet()){
@@ -58,7 +59,7 @@ public class Node {
 				int newcost = costToSender + m.content.get(dest);
 				distanceTable.get(dest).put(via, newcost);
 				if(newcost != oldcost){
-					isTableUpdated = true;
+					isMessageUpdates = true;
 				}
 			}
 			// Receiver node(this) did not know the destination node at all. Add this new node to distance table
@@ -69,22 +70,30 @@ public class Node {
 				}
 				row.put(via, m.content.get(dest)+costToSender); // <via, cost>
 				distanceTable.put(dest, row);
-				isTableUpdated = true;
+				isMessageUpdates = true;
 			}
 		}
-
-		System.out.println("New distance table of node "+id);
-		printDistanceTable();
+		if(isMessageUpdates){
+			isTableUpdated = true;
+			System.out.println("Table is updated upon message. New distance table of node "+id);
+			printDistanceTable();
+		}
+		else{
+			System.out.println("Table is not updated upon message. Distance table is same above.");
+		}
+		System.out.println();
 	}
 
 	// If table is updated call receiveUpdate function of all neighbors
 	public boolean sendUpdate(){
 		if(isTableUpdated){
-			System.out.println("Node" + id +" has updates to send to its "+ neighbours.length +" neighbors...");
+			System.out.println("\nNode " + id +" has updates. It will notify "+ neighbours.length +" neighbors...");
 			Hashtable<Integer, Integer> distVector = getDistanceVector();
 			for(Integer nei : neighbours){
 				if(nei == this.id) continue; // Dont send update to itself
-				RouteSim.graph.get(nei).receiveUpdate(new Message(id, nei, distVector));
+				System.out.println("Node "+nei+" is notified with distance vector of node "+id);
+				printDistanceVector();
+				updateNode(nei, new Message(id, nei, distVector));
 			}
 			isTableUpdated = false;
 			return true;
@@ -95,7 +104,6 @@ public class Node {
 	}
 
 	public Hashtable<Integer, Integer> getForwardingTable(){ // <destination, via>
-		System.out.println("Forwarding table of node "+id);
 		Hashtable<Integer, Integer> ft = new Hashtable<>();
 
 		for(Integer dest : distanceTable.keySet()){
@@ -109,29 +117,42 @@ public class Node {
 				}
 			}
 			ft.put(dest, minid);
-			System.out.println("To arrive node " + dest + " go to node "+ minid+" direction.");
 		}
 		System.out.println();
 		return ft;
 	}
 
+	public void printForwardingTable(){
+		Hashtable<Integer, Integer> ft = getForwardingTable();
+		System.out.println("Forwarding table of node"+id);
+		System.out.println("Dest\tVia");
+		for(Integer dest : ft.keySet()){
+			System.out.println(dest+"\t\t"+ft.get(dest));
+		}
+	}
+
 	public Hashtable<Integer, Integer> getDistanceVector(){ // <destination, cost >
-		System.out.println("Distance vector of node "+id);
 		Hashtable<Integer, Integer> distVector = new Hashtable<>();
 		for(Integer dest : distanceTable.keySet()){
 			int min = INF;
-			int minid = -1;
 			Hashtable<Integer, Integer> row = distanceTable.get(dest);
 			for( Integer via : row.keySet()){
 				if(row.get(via) < min){
 					min = row.get(via);
-					minid = via;
 				}
 			}
 			distVector.put(dest, min);
-			System.out.println("From "+id +" to "+dest +" min cost is "+min+" via node "+minid);
 		}
 		return distVector;
+	}
+
+	public void printDistanceVector(){
+		Hashtable<Integer, Integer> dv = getDistanceVector();
+		System.out.println("Distance vector of node"+id);
+		System.out.println("Dest\tCost");
+		for(Integer dest : dv.keySet()){
+			System.out.println(dest+"\t\t"+dv.get(dest));
+		}
 	}
 
 	public void printDistanceTable(){
@@ -142,6 +163,7 @@ public class Node {
 
 		System.out.print("D"+id+" ");
 		for(int via : neighbours){
+			if(via == id) continue;
 			System.out.print(via+" ");
 		}
 		System.out.println();
@@ -150,6 +172,7 @@ public class Node {
 			System.out.print(dest+"| ");
 			Hashtable mincost = distanceTable.get(dest);
 			for(int via : neighbours){
+				if(via == id) continue;
 				int cost = (int)mincost.get(via);
 				if(cost == INF ) System.out.print("- ");
 				else System.out.print(cost + " ");
@@ -166,16 +189,6 @@ public class Node {
 		int oldCost = ht.get(neighbor);
 		int diff = newCost - oldCost;
 
-		/*Hashtable<Integer, Integer> ft = getForwardingTable(); // ft: <destination, via>
-		for(Integer dest : ft.keySet()){
-			if(ft.get(dest) == neighbor){ // via neighbor
-				Hashtable<Integer, Integer> row = distanceTable.get(dest); // row : <via,cost>
-				int oldc = row.get(neighbor);
-				row.put(neighbor, oldc + diff);
-				distanceTable.put(dest, row);
-			}
-		}*/
-
 		for(Integer dest : distanceTable.keySet()){
 			Hashtable<Integer, Integer> row = distanceTable.get(dest); // row : <via,cost>
 			int oldc = row.get(neighbor);
@@ -186,5 +199,15 @@ public class Node {
 		printDistanceTable();
 
 		isTableUpdated = true;
+	}
+
+	private void updateNode(int neighbor, Message message){
+		if(!linkCost.containsKey(neighbor)){
+			String s = String.format("You(%d) cannot update this node(%d). Because it is not your neighbor",id, neighbor);
+			System.out.println(s);
+			return;
+		}else{
+			RouteSim.graph.get(neighbor).receiveUpdate(message);
+		}
 	}
 }
