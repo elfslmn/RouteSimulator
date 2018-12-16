@@ -10,11 +10,13 @@ public class Node {
 	public Hashtable<Integer, Hashtable<Integer, Integer>> distanceTable;
 
 	public boolean isTableUpdated = false;
-	private Integer[] neighbours;
+	private Integer[] neighbours; // contains node itself, too
 	
 	public Node(int nodeID, Hashtable<Integer, Integer> linkCost) {
 		this.id = nodeID;
 		this.linkCost = linkCost;
+
+		linkCost.put(id,0); // Node path to itself.
 
 		distanceTable = new Hashtable<>();
 		neighbours = new Integer[linkCost.size()];
@@ -49,7 +51,7 @@ public class Node {
 		Integer via = m.senderID;
 		Integer costToSender = distanceTable.get(m.senderID).get(via);
 		for(Integer dest: m.content.keySet()){
-			if(dest == id) continue; // path to itself // TODO add distance table to itself also.
+			//if(dest == id) continue; // path to itself
 			if(distanceTable.keySet().contains(dest)){
 				int oldcost = distanceTable.get(dest).get(via);
 				int newcost = costToSender + m.content.get(dest);
@@ -80,6 +82,7 @@ public class Node {
 			System.out.println("Node" + id +" has updates to send to its "+ neighbours.length +" neighbors...");
 			Hashtable<Integer, Integer> distVector = getDistanceVector();
 			for(Integer nei : neighbours){
+				if(nei == this.id) continue; // Dont send update to itself
 				RouteSim.graph.get(nei).receiveUpdate(new Message(id, nei, distVector));
 			}
 			isTableUpdated = false;
@@ -91,15 +94,31 @@ public class Node {
 	}
 
 	public Hashtable<Integer, Integer> getForwardingTable(){ // <destination, via>
+		System.out.println("Forwarding table of node "+id);
+		Hashtable<Integer, Integer> ft = new Hashtable<>();
 
-		return null;
+		for(Integer dest : distanceTable.keySet()){
+			int min = INF;
+			int minid = -1;
+			Hashtable<Integer, Integer> row = distanceTable.get(dest);
+			for( Integer via : row.keySet()){
+				if(row.get(via) < min){
+					min = row.get(via);
+					minid = via;
+				}
+			}
+			ft.put(dest, minid);
+			System.out.println("To arrive node " + dest + " go to node "+ minid+" direction.");
+		}
+		System.out.println();
+		return ft;
 	}
 
 	public Hashtable<Integer, Integer> getDistanceVector(){ // <destination, cost >
 		System.out.println("Distance vector of node "+id);
 		Hashtable<Integer, Integer> distVector = new Hashtable<>();
 		for(Integer dest : distanceTable.keySet()){
-			int min = 999;
+			int min = INF;
 			int minid = -1;
 			Hashtable<Integer, Integer> row = distanceTable.get(dest);
 			for( Integer via : row.keySet()){

@@ -37,14 +37,12 @@ public class RouteSim {
 			}
 			reader.close();
 
-			for(int t=1 ; t < 1000; t++){
+			for(int t=0 ; t < 1000; t++){
+				System.out.println("\nTime "+t+" ------------------------------------------------------");
 				boolean isConverged = true;
 				for(Integer id : graph.keySet()){
-					//System.out.println("Distance table of node "+ id);
-					//graph.get(id).printDistanceTable();
-
 					boolean isUpdated = graph.get(id).sendUpdate();
-					System.out.println("Node "+id+" isUpdated="+isUpdated + " and updates are sent\n");
+					System.out.println("Node "+id+" isUpdated="+isUpdated + " and updates are sent");
 					isConverged = isConverged && (!isUpdated);
 				}
 				if(isConverged){
