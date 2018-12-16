@@ -10,7 +10,7 @@ public class Node {
 	public Hashtable<Integer, Hashtable<Integer, Integer>> distanceTable; // <dest, <via,cost>>
 
 	public boolean isTableUpdated = false;
-	private Integer[] neighbours; // contains node itself, too
+	public Integer[] neighbours; // contains node itself, too
 	boolean addItself = true;
 	
 	public Node(int nodeID, Hashtable<Integer, Integer> linkCost) {
@@ -207,7 +207,7 @@ public class Node {
 			System.out.println(s);
 			return;
 		}else{
-			RouteSim.graph.get(neighbor).receiveUpdate(message);
+			RouteSim.nodes.get(neighbor).receiveUpdate(message);
 		}
 	}
 }
