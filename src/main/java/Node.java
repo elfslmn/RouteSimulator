@@ -9,7 +9,7 @@ public class Node {
 	public Hashtable<Integer, Integer> linkCost; //key: neighbor id, value: link cost to that neighbor
 	public Hashtable<Integer, Hashtable<Integer, Integer>> distanceTable; // <dest, <via,cost>>
 
-	public boolean isTableUpdated = false;
+	public boolean isdvUpdated = false;
 	public Integer[] neighbours; // contains node itself, too
 	boolean addItself = true;
 	
@@ -36,7 +36,7 @@ public class Node {
 		}
 
 		Arrays.sort(neighbours, Collections.reverseOrder());
-		isTableUpdated = true;
+		isdvUpdated = true;
 	}
 
 	// Updates its node's distance table according to message.
@@ -48,6 +48,7 @@ public class Node {
 		}
 		System.out.println("Old distance table of node "+id);
 		printDistanceTable();
+		Hashtable<Integer, Integer> olddv = getDistanceVector();
 
 		boolean isMessageUpdates = false;
 		Integer via = m.senderID;
@@ -74,7 +75,6 @@ public class Node {
 			}
 		}
 		if(isMessageUpdates){
-			isTableUpdated = true;
 			System.out.println("Table is updated upon message. New distance table of node "+id);
 			printDistanceTable();
 		}
@@ -82,11 +82,12 @@ public class Node {
 			System.out.println("Table is not updated upon message. Distance table is same above.");
 		}
 		System.out.println();
+		if(isDistanceVectorChanged(olddv)) isdvUpdated = true;
 	}
 
 	// If table is updated call receiveUpdate function of all neighbors
 	public boolean sendUpdate(){
-		if(isTableUpdated){
+		if(isdvUpdated){
 			System.out.println("\nNode " + id +" has updates. It will notify "+ neighbours.length +" neighbors...");
 			Hashtable<Integer, Integer> distVector = getDistanceVector();
 			for(Integer nei : neighbours){
@@ -95,7 +96,7 @@ public class Node {
 				printDistanceVector();
 				updateNode(nei, new Message(id, nei, distVector));
 			}
-			isTableUpdated = false;
+			isdvUpdated = false;
 			return true;
 		}
 		else{
@@ -181,6 +182,16 @@ public class Node {
 		}
 	}
 
+	public boolean isDistanceVectorChanged(Hashtable<Integer, Integer> olddv){ // <destination, cost >
+		Hashtable<Integer, Integer> newdv = getDistanceVector();
+		if(newdv.size() != olddv.size()) return true;
+
+		for(int dest: olddv.keySet()){
+			if(olddv.get(dest) != newdv.get(dest)) return true;
+		}
+		return false;
+	}
+
 	public void onCostChanged(int neighbor, int newCost){
 		System.out.println("OnCostChanged(neignbor: "+ neighbor+" newCost: "+ newCost );
 		System.out.println("Old distance table of node "+id);
@@ -188,6 +199,8 @@ public class Node {
 		Hashtable<Integer, Integer> ht = distanceTable.get(neighbor); // ht : <via,cost>
 		int oldCost = ht.get(neighbor);
 		int diff = newCost - oldCost;
+
+		Hashtable<Integer, Integer> olddv = getDistanceVector();
 
 		for(Integer dest : distanceTable.keySet()){
 			Hashtable<Integer, Integer> row = distanceTable.get(dest); // row : <via,cost>
@@ -198,7 +211,7 @@ public class Node {
 		System.out.println("New distance table of node "+id);
 		printDistanceTable();
 
-		isTableUpdated = true;
+		if(isDistanceVectorChanged(olddv)) isdvUpdated = true;
 	}
 
 	private void updateNode(int neighbor, Message message){
