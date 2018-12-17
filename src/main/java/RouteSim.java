@@ -69,7 +69,7 @@ public class RouteSim {
 			});
 
 			JLabel label2 = new JLabel("Destination node:");
-			JTextField tf2 = new JTextField(3); // accepts upto 10 characters
+			JTextField tf2 = new JTextField(3);
 			tf2.getDocument().addDocumentListener(new DocumentListener() {
 				public void changedUpdate(DocumentEvent e) {getNumber();}
 				public void removeUpdate(DocumentEvent e)  {getNumber();}
@@ -80,6 +80,10 @@ public class RouteSim {
 					System.out.println("Destination node: "+destNode);
 				}
 			});
+
+			JLabel label3 = new JLabel("Total Cost:");
+			JTextField tf3 = new JTextField(3);
+			tf3.setEditable(false);
 
 			JButton show = new JButton("Show MinCost Path");
 			show.addActionListener(actionEvent -> {
@@ -98,6 +102,7 @@ public class RouteSim {
 					return;
 				}
                 int cur = startNode;
+                int cost = nodes.get(cur).getDistanceVector().get(destNode);
                 while (cur != destNode){
                     int via = nodes.get(cur).getForwardingTable().get(destNode);
                     System.out.println(cur+"->"+via);
@@ -108,11 +113,16 @@ public class RouteSim {
                 }
                 viewer.getDefaultView().repaint();
                 vp.pump();
+                tf3.setText(""+cost);
             });
+
+
 			panel.add(label1);
 			panel.add(tf1);
 			panel.add(label2);
 			panel.add(tf2);
+			panel.add(label3);
+			panel.add(tf3);
 			panel.add(show);
 			frame.getContentPane().add(panel);
 			frame.setVisible(true);
